@@ -17,18 +17,16 @@ import org.ejml.simple.SimpleMatrix;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.teamcode.LQRController;
 
-
 @TeleOp
 @Config
 public class LQRMecanumDriveOpMode extends OpMode {
 
-    private DcMotorEx rearLeft, rearRight, frontLeft, frontRight;
-    private Encoder leftEncoder, rightEncoder, frontEncoder;
+    private DcMotorEx backLeftMotor, backRightMotor, frontLeftMotor, frontRightMotor;
+    private Encoder rightEncoder, frontEncoder;
     private IMU imu;
     private LQRController lqrController;
     private boolean useLQR = false;
     private boolean previousBState = false;
-
 
     @Override
     public void init() {
@@ -49,15 +47,12 @@ public class LQRMecanumDriveOpMode extends OpMode {
         if (System.currentTimeMillis() % 500 == 0) {
             updateLQRController();
         }
-//        SimpleMatrix state = getCurrentState();
-//        SimpleMatrix lqrInput = lqrController.calculateLQRInput(state);
 
         boolean currentBState = gamepad1.b;
         if (currentBState && !previousBState) {
             useLQR = !useLQR;
         }
         previousBState = currentBState;
-
 
         double[] powers;
         SimpleMatrix lqrInput = null;
@@ -73,8 +68,8 @@ public class LQRMecanumDriveOpMode extends OpMode {
 
         telemetry.addData("Drive Mode", useLQR ? "LQR" : "Normal");
         telemetry.addData("Motor Powers", java.util.Arrays.toString(powers));
-        telemetry.addData("LQR Input", lqrInput.toString());
-        telemetry.addData("Current State", previousBState);
+        telemetry.addData("LQR Input", lqrInput != null ? lqrInput.toString() : "N/A");
+        telemetry.addData("Current State", getCurrentState().toString());
         telemetry.update();
     }
 
@@ -84,54 +79,49 @@ public class LQRMecanumDriveOpMode extends OpMode {
                 RevHubOrientationOnRobot.LogoFacingDirection.BACKWARD,
                 RevHubOrientationOnRobot.UsbFacingDirection.UP)));
 
-        rearLeft = hardwareMap.get(DcMotorEx.class, "leftRear");
-        rearRight = hardwareMap.get(DcMotorEx.class, "rightRear");
-        frontLeft = hardwareMap.get(DcMotorEx.class, "leftFront");
-        frontRight = hardwareMap.get(DcMotorEx.class, "rightFront");
+        backLeftMotor = hardwareMap.get(DcMotorEx.class, "leftRear");
+        backRightMotor = hardwareMap.get(DcMotorEx.class, "rightRear");
+        frontLeftMotor = hardwareMap.get(DcMotorEx.class, "leftFront");
+        frontRightMotor = hardwareMap.get(DcMotorEx.class, "rightFront");
 
-        rearLeft.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-        rearRight.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-        frontLeft.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-        frontRight.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        backLeftMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        backRightMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        frontLeftMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        frontRightMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 
-        rearLeft.setPower(0);
-        rearRight.setPower(0);
-        frontLeft.setPower(0);
-        frontRight.setPower(0);
+        backLeftMotor.setPower(0);
+        backRightMotor.setPower(0);
+        frontLeftMotor.setPower(0);
+        frontRightMotor.setPower(0);
 
-        rearLeft.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        rearRight.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        frontLeft.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        frontRight.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        backLeftMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        backRightMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        frontLeftMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        frontRightMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
-        rearLeft.setDirection(DcMotor.Direction.REVERSE);
-        frontLeft.setDirection(DcMotor.Direction.REVERSE);
-        rearRight.setDirection(DcMotor.Direction.REVERSE);
+        backLeftMotor.setDirection(DcMotor.Direction.REVERSE);
+        frontLeftMotor.setDirection(DcMotor.Direction.REVERSE);
+        backRightMotor.setDirection(DcMotor.Direction.REVERSE);
 
-        leftEncoder = new OverflowEncoder(new RawEncoder(hardwareMap.get(DcMotorEx.class, "leftEncoder")));
-        rightEncoder = new OverflowEncoder(new RawEncoder(hardwareMap.get(DcMotorEx.class, "rightEncoder")));
-        frontEncoder = new OverflowEncoder(new RawEncoder(hardwareMap.get(DcMotorEx.class, "frontEncoder")));
+        rightEncoder = new OverflowEncoder(new RawEncoder(hardwareMap.get(DcMotorEx.class, "rightRear")));
+        frontEncoder = new OverflowEncoder(new RawEncoder(hardwareMap.get(DcMotorEx.class, "leftFront")));
     }
 
     private SimpleMatrix getCurrentState() {
-        double leftPosition = leftEncoder.getPositionAndVelocity().position;
         double rightPosition = rightEncoder.getPositionAndVelocity().position;
         double frontPosition = frontEncoder.getPositionAndVelocity().position;
-        double leftVelocity = leftEncoder.getPositionAndVelocity().velocity;
         double rightVelocity = rightEncoder.getPositionAndVelocity().velocity;
         double frontVelocity = frontEncoder.getPositionAndVelocity().velocity;
         double heading = imu.getRobotYawPitchRollAngles().getYaw(AngleUnit.RADIANS);
 
         return new SimpleMatrix(new double[][]{
-                {leftPosition},
                 {rightPosition},
                 {frontPosition},
                 {heading},
-                {leftVelocity},
-                {rightVelocity}
+                {rightVelocity},
+                {frontVelocity}
         });
     }
-
 
     private double[] blendControlInputs(double x, double y, double rx, SimpleMatrix lqrInput) {
         double[] manualPowers = calculateMecanumWheelPowers(x, y, rx);
@@ -156,9 +146,9 @@ public class LQRMecanumDriveOpMode extends OpMode {
     }
 
     private void setMotorPowers(double[] powers) {
-        frontLeft.setPower(powers[0]);
-        rearLeft.setPower(powers[1]);
-        frontRight.setPower(powers[2]);
-        rearRight.setPower(powers[3]);
+        frontLeftMotor.setPower(powers[0]);
+        backLeftMotor.setPower(powers[1]);
+        frontRightMotor.setPower(powers[2]);
+        backRightMotor.setPower(powers[3]);
     }
 }
