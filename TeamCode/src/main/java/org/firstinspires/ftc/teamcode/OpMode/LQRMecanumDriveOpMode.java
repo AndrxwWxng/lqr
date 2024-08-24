@@ -63,7 +63,32 @@ public class LQRMecanumDriveOpMode extends OpMode {
         setMotorPowers(powers);
 
         telemetry.addData("Drive Mode", useLQR ? "LQR" : "Normal");
+
+//        if (useLQR) {
+            displayLQRMatrixTelemetry();
+//        }
+
         telemetry.update();
+    }
+
+    private void displayLQRMatrixTelemetry() {
+        telemetry.addData("A Matrix", getMatrixString(lqrController.getAMatrix()));
+        telemetry.addData("B Matrix", getMatrixString(lqrController.getBMatrix()));
+        telemetry.addData("Q Matrix", getMatrixString(lqrController.getQMatrix()));
+        telemetry.addData("R Matrix", getMatrixString(lqrController.getRMatrix()));
+    }
+
+    private String getMatrixString(SimpleMatrix matrix) {
+        StringBuilder sb = new StringBuilder();
+        int rows = matrix.numRows();
+        int cols = matrix.numCols();
+        for (int i = 0; i < rows; i++) {
+            for (int j = 0; j < cols; j++) {
+                sb.append(String.format("%.2f ", matrix.get(i, j)));
+            }
+            sb.append("\n");
+        }
+        return sb.toString();
     }
 
     private void initializeHardware(HardwareMap hardwareMap) {
