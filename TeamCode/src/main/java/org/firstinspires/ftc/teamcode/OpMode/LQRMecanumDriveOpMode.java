@@ -44,10 +44,6 @@ public class LQRMecanumDriveOpMode extends OpMode {
         double x = gamepad1.left_stick_x;
         double rx = gamepad1.right_stick_x;
 
-//        if (System.currentTimeMillis() % 500 == 0) {
-//            updateLQRController();
-//        }
-
         boolean currentBState = gamepad1.b;
         if (currentBState && !previousBState) {
             useLQR = !useLQR;
@@ -67,9 +63,6 @@ public class LQRMecanumDriveOpMode extends OpMode {
         setMotorPowers(powers);
 
         telemetry.addData("Drive Mode", useLQR ? "LQR" : "Normal");
-//        telemetry.addData("Motor Powers", java.util.Arrays.toString(powers));
-//        telemetry.addData("LQR Input", lqrInput != null ? lqrInput.toString() : "N/A");
-//        telemetry.addData("Current State", getCurrentState().toString());
         telemetry.update();
     }
 
@@ -99,9 +92,8 @@ public class LQRMecanumDriveOpMode extends OpMode {
         frontLeftMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         frontRightMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
-        backLeftMotor.setDirection(DcMotor.Direction.REVERSE);
-        frontLeftMotor.setDirection(DcMotor.Direction.REVERSE);
-        backRightMotor.setDirection(DcMotor.Direction.REVERSE);
+//        backLeftMotor.setDirection(DcMotor.Direction.REVERSE);
+//        frontLeftMotor.setDirection(DcMotor.Direction.REVERSE);
 
         rightEncoder = new OverflowEncoder(new RawEncoder(hardwareMap.get(DcMotorEx.class, "rightRear")));
         frontEncoder = new OverflowEncoder(new RawEncoder(hardwareMap.get(DcMotorEx.class, "leftFront")));

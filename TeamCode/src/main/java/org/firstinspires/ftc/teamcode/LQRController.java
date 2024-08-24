@@ -1,17 +1,15 @@
 package org.firstinspires.ftc.teamcode;
 
 import com.acmerobotics.dashboard.config.Config;
-
 import org.ejml.simple.SimpleMatrix;
 
 @Config
-public
-class LQRController {
+public class LQRController {
     private final SimpleMatrix LQR_Gain_Matrix;
-
 
     @Config
     public static class MatrixConfig {
+        // State transition matrix (6x6)
         public static double[][] A_MATRIX = {
                 {1, 0, 0, 0, 0.1, 0},
                 {0, 1, 0, 0, 0, 0.1},
@@ -21,6 +19,7 @@ class LQRController {
                 {0, 0, 0, 0, 0, 1}
         };
 
+        // Input matrix (6x4)
         public static double[][] B_MATRIX = {
                 {0.005, 0.005, 0.005, 0.005},
                 {0.005, -0.005, -0.005, 0.005},
@@ -30,24 +29,32 @@ class LQRController {
                 {0.1, -0.1, -0.1, 0.1}
         };
 
+        // State cost matrix (6x6)
         public static double Q_SCALE = 1.0;
+        public static double[][] Q_MATRIX = {
+                {Q_SCALE, 0, 0, 0, 0, 0},
+                {0, Q_SCALE, 0, 0, 0, 0},
+                {0, 0, Q_SCALE, 0, 0, 0},
+                {0, 0, 0, Q_SCALE, 0, 0},
+                {0, 0, 0, 0, Q_SCALE, 0},
+                {0, 0, 0, 0, 0, Q_SCALE}
+        };
+
+        // Input cost matrix (4x4)
         public static double R_SCALE = 0.1;
+        public static double[][] R_MATRIX = {
+                {R_SCALE, 0, 0, 0},
+                {0, R_SCALE, 0, 0},
+                {0, 0, R_SCALE, 0},
+                {0, 0, 0, R_SCALE}
+        };
     }
 
     public LQRController() {
-//        TODO NEED TO TUNE THESE
-//         State transition matrix
         SimpleMatrix A = new SimpleMatrix(MatrixConfig.A_MATRIX);
-
-        // Input matrix
         SimpleMatrix B = new SimpleMatrix(MatrixConfig.B_MATRIX);
-
-        // State cost matrix
-        SimpleMatrix Q = SimpleMatrix.identity(6).scale(MatrixConfig.Q_SCALE);
-
-        // Input cost matrix
-        SimpleMatrix R = SimpleMatrix.identity(4).scale(MatrixConfig.R_SCALE);
-
+        SimpleMatrix Q = new SimpleMatrix(MatrixConfig.Q_MATRIX);
+        SimpleMatrix R = new SimpleMatrix(MatrixConfig.R_MATRIX);
         LQR_Gain_Matrix = solveRiccati(A, B, Q, R);
     }
 
@@ -57,9 +64,20 @@ class LQRController {
 
     private SimpleMatrix solveRiccati(SimpleMatrix A, SimpleMatrix B, SimpleMatrix Q, SimpleMatrix R) {
         SimpleMatrix P = Q;
-        for (int i = 0; i < 100; i++) {
-            SimpleMatrix temp = P.mult(B).mult(R.invert()).mult(B.transpose()).mult(P);
-            P = A.transpose().mult(P).mult(A).minus(temp).plus(Q);
+        int maxIterations = 100;
+        double tolerance = 1e-6;
+
+        for (int i = 0; i < maxIterations; i++) {
+            SimpleMatrix temp = B.transpose().mult(P).mult(B);
+            SimpleMatrix temp2 = R.plus(temp);
+            SimpleMatrix temp3 = temp2.invert();
+            SimpleMatrix temp4 = B.mult(temp3).mult(B.transpose());
+            SimpleMatrix P_next = A.transpose().mult(P).mult(A).minus(A.transpose().mult(P).mult(temp4).mult(P).mult(A)).plus(Q);
+
+            if (P_next.minus(P).normF() < tolerance) {
+                break;
+            }
+            P = P_next;
         }
         return R.invert().mult(B.transpose()).mult(P);
     }
