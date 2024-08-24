@@ -23,38 +23,34 @@ public class LQRController {
         return new SimpleMatrix(MatrixConfig.R_MATRIX);
     }
 
-
     @Config
     public static class MatrixConfig {
-        // State transition matrix (6x6)
+        // State transition matrix (5x5)
         public static double[][] A_MATRIX = {
-                {1, 0, 0, 0, 0.1, 0},
-                {0, 1, 0, 0, 0, 0.1},
-                {0, 0, 1, 0, 0, 0},
-                {0, 0, 0, 1, 0, 0},
-                {0, 0, 0, 0, 1, 0},
-                {0, 0, 0, 0, 0, 1}
+                {1, 0, 0, 0.1, 0},
+                {0, 1, 0, 0, 0.1},
+                {0, 0, 1, 0, 0},
+                {0, 0, 0, 1, 0},
+                {0, 0, 0, 0, 1}
         };
 
-        // Input matrix (6x4)
+        // Input matrix (5x4)
         public static double[][] B_MATRIX = {
                 {0.005, 0.005, 0.005, 0.005},
                 {0.005, -0.005, -0.005, 0.005},
                 {0.001, -0.001, 0.001, -0.001},
-                {0.02, -0.02, 0.02, -0.02},
                 {0.1, 0.1, 0.1, 0.1},
                 {0.1, -0.1, -0.1, 0.1}
         };
 
-        // State cost matrix (6x6)
+        // State cost matrix (5x5)
         public static double Q_SCALE = 1.0;
         public static double[][] Q_MATRIX = {
-                {Q_SCALE, 0, 0, 0, 0, 0},
-                {0, Q_SCALE, 0, 0, 0, 0},
-                {0, 0, Q_SCALE, 0, 0, 0},
-                {0, 0, 0, Q_SCALE, 0, 0},
-                {0, 0, 0, 0, Q_SCALE, 0},
-                {0, 0, 0, 0, 0, Q_SCALE}
+                {Q_SCALE, 0, 0, 0, 0},
+                {0, Q_SCALE, 0, 0, 0},
+                {0, 0, Q_SCALE, 0, 0},
+                {0, 0, 0, Q_SCALE, 0},
+                {0, 0, 0, 0, Q_SCALE}
         };
 
         // Input cost matrix (4x4)
