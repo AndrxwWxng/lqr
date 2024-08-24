@@ -44,9 +44,9 @@ public class LQRMecanumDriveOpMode extends OpMode {
         double x = gamepad1.left_stick_x;
         double rx = gamepad1.right_stick_x;
 
-        if (System.currentTimeMillis() % 500 == 0) {
-            updateLQRController();
-        }
+//        if (System.currentTimeMillis() % 500 == 0) {
+//            updateLQRController();
+//        }
 
         boolean currentBState = gamepad1.b;
         if (currentBState && !previousBState) {
@@ -67,9 +67,9 @@ public class LQRMecanumDriveOpMode extends OpMode {
         setMotorPowers(powers);
 
         telemetry.addData("Drive Mode", useLQR ? "LQR" : "Normal");
-        telemetry.addData("Motor Powers", java.util.Arrays.toString(powers));
-        telemetry.addData("LQR Input", lqrInput != null ? lqrInput.toString() : "N/A");
-        telemetry.addData("Current State", getCurrentState().toString());
+//        telemetry.addData("Motor Powers", java.util.Arrays.toString(powers));
+//        telemetry.addData("LQR Input", lqrInput != null ? lqrInput.toString() : "N/A");
+//        telemetry.addData("Current State", getCurrentState().toString());
         telemetry.update();
     }
 
