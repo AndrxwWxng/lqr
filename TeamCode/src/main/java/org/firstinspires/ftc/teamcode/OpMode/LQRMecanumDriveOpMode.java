@@ -80,8 +80,8 @@ public class LQRMecanumDriveOpMode extends OpMode {
 
     private String getMatrixString(SimpleMatrix matrix) {
         StringBuilder sb = new StringBuilder();
-        int rows = matrix.numRows();
-        int cols = matrix.numCols();
+        int rows = matrix.getNumRows();
+        int cols = matrix.getNumCols();
         for (int i = 0; i < rows; i++) {
             for (int j = 0; j < cols; j++) {
                 sb.append(String.format("%.2f ", matrix.get(i, j)));
