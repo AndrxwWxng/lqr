@@ -28,31 +28,37 @@ public class LQRAuto extends OpMode {
     private List<Pose2d> positions = new ArrayList<>();
     private int currentPositionIndex = 0;
 
+    private static final double MAX_MOTOR_POWER = 0.5;
+    private static final double ALPHA = 0.1;
+    private double[] previousPowers = new double[4];
+
     @Override
     public void init() {
-
         initializeHardware(hardwareMap);
         lqrController = new LQRController();
 
-
+        // Define target positions
         positions.add(new Pose2d(0, 0, Math.toRadians(0)));
         positions.add(new Pose2d(50, 0, Math.toRadians(0)));
         positions.add(new Pose2d(0, 0, Math.toRadians(0)));
     }
 
     @Override
+    public void start() {
+        // Reset state for autonomous
+        currentPositionIndex = 0;
+    }
+
+    @Override
     public void loop() {
         if (currentPositionIndex < positions.size()) {
             Pose2d targetPose = positions.get(currentPositionIndex);
-            moveToPosition(targetPose.position.x, targetPose.position.y, targetPose.heading.toDouble());
-
-            if (isAtTargetPosition(targetPose.position.x, targetPose.position.y, targetPose.heading.toDouble())) {
-                //only moves on if the position is accurate
+            moveToPosition(targetPose);
+            if (hasReachedPosition(targetPose)) {
                 currentPositionIndex++;
             }
         } else {
-            //stops when all positions are done
-            setMotorPowers(new double[]{0, 0, 0, 0});
+            stopMotors();
         }
     }
 
@@ -77,56 +83,57 @@ public class LQRAuto extends OpMode {
         frontLeftMotor.setZeroPowerBehavior(DcMotorEx.ZeroPowerBehavior.BRAKE);
         frontRightMotor.setZeroPowerBehavior(DcMotorEx.ZeroPowerBehavior.BRAKE);
 
-        leftEncoder = new OverflowEncoder(new RawEncoder(hardwareMap.get(DcMotorEx.class, "leftRear")));
-        frontEncoder = new OverflowEncoder(new RawEncoder(hardwareMap.get(DcMotorEx.class, "rightFront")));
+        leftEncoder = new OverflowEncoder(new RawEncoder(hardwareMap.get(DcMotorEx.class, "leftFront")));
+        frontEncoder = new OverflowEncoder(new RawEncoder(hardwareMap.get(DcMotorEx.class, "rightRear")));
     }
 
-    private void moveToPosition(double targetX, double targetY, double targetHeading) {
+    private void moveToPosition(Pose2d targetPose) {
         SimpleMatrix currentState = getCurrentState();
         SimpleMatrix targetState = new SimpleMatrix(new double[][]{
-                {targetX},
-                {targetY},
-                {targetHeading},
-                {0}, // target velocity = 0
-                {0}  // for matching matrix dimensions
+                {targetPose.position.x},
+                {targetPose.position.y},
+                {targetPose.heading.toDouble()},
+                {0} // 0 velocity
         });
 
         SimpleMatrix lqrInput = lqrController.calculateLQRInput(currentState.minus(targetState));
 
-        setMotorPowers(new double[]{
-                lqrInput.get(0),
-                lqrInput.get(1),
-                lqrInput.get(2),
-                lqrInput.get(3)
-        });
+        double[] limitedPowers = new double[4];
+        for (int i = 0; i < 4; i++) {
+            double rawPower = lqrInput.get(i);
+            double limitedPower = Math.max(-MAX_MOTOR_POWER, Math.min(MAX_MOTOR_POWER, rawPower));
+            limitedPowers[i] = ALPHA * limitedPower + (1 - ALPHA) * previousPowers[i];
+            previousPowers[i] = limitedPowers[i];
+        }
 
-        telemetry.addData("Target Pose", targetX + ", " + targetY + ", " + Math.toDegrees(targetHeading));
-        telemetry.addData("Current X", currentState.get(0));
-        telemetry.addData("Current Y", currentState.get(1));
-        telemetry.addData("LQR Input", lqrInput.toString());
-        telemetry.update();
-    }
-
-    private boolean isAtTargetPosition(double targetX, double targetY, double targetHeading) {
-        SimpleMatrix currentState = getCurrentState();
-        double tolerance = 0.5; //can adjust this
-        return Math.abs(currentState.get(0) - targetX) < tolerance &&
-                Math.abs(currentState.get(1) - targetY) < tolerance &&
-                Math.abs(currentState.get(2) - targetHeading) < Math.toRadians(2); // 2 degrees tolerance
+        setMotorPowers(limitedPowers);
     }
 
     private SimpleMatrix getCurrentState() {
         double leftPosition = leftEncoder.getPositionAndVelocity().position;
         double frontPosition = frontEncoder.getPositionAndVelocity().position;
         double heading = imu.getRobotYawPitchRollAngles().getYaw(AngleUnit.RADIANS);
+        double velocity = (leftEncoder.getPositionAndVelocity().velocity +
+                frontEncoder.getPositionAndVelocity().velocity) / 2;
 
         return new SimpleMatrix(new double[][]{
                 {leftPosition},
                 {frontPosition},
                 {heading},
-                {0},
-                {0}
+                {velocity}
         });
+    }
+
+    private boolean hasReachedPosition(Pose2d targetPose) {
+        SimpleMatrix currentState = getCurrentState();
+        double tolerance = 1.0; // Define an appropriate tolerance
+        return Math.abs(currentState.get(0) - targetPose.position.x) < tolerance &&
+                Math.abs(currentState.get(1) - targetPose.position.y) < tolerance &&
+                Math.abs(currentState.get(2) - targetPose.heading.toDouble()) < Math.toRadians(5);
+    }
+
+    private void stopMotors() {
+        setMotorPowers(new double[]{0, 0, 0, 0});
     }
 
     private void setMotorPowers(double[] powers) {
