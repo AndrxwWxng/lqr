@@ -8,7 +8,9 @@ import com.acmerobotics.roadrunner.ftc.RawEncoder;
 import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.IMU;
 import org.ejml.simple.SimpleMatrix;
@@ -28,7 +30,7 @@ public class LQRAuto extends OpMode {
     private List<Pose2d> positions = new ArrayList<>();
     private int currentPositionIndex = 0;
 
-    private static final double MAX_MOTOR_POWER = 0.5;
+    private static final double MAX_MOTOR_POWER = 1;
     private static final double ALPHA = 0.1;
     private double[] previousPowers = new double[4];
 
@@ -39,7 +41,7 @@ public class LQRAuto extends OpMode {
 
         // Define target positions
         positions.add(new Pose2d(0, 0, Math.toRadians(0)));
-        positions.add(new Pose2d(50, 0, Math.toRadians(0)));
+        positions.add(new Pose2d(0, 10, Math.toRadians(0)));
         positions.add(new Pose2d(0, 0, Math.toRadians(0)));
     }
 
@@ -77,6 +79,11 @@ public class LQRAuto extends OpMode {
         backRightMotor.setMode(DcMotorEx.RunMode.RUN_WITHOUT_ENCODER);
         frontLeftMotor.setMode(DcMotorEx.RunMode.RUN_WITHOUT_ENCODER);
         frontRightMotor.setMode(DcMotorEx.RunMode.RUN_WITHOUT_ENCODER);
+
+        backLeftMotor.setDirection(DcMotor.Direction.REVERSE);
+        frontLeftMotor.setDirection(DcMotor.Direction.REVERSE);
+        backRightMotor.setDirection(DcMotorSimple.Direction.REVERSE);
+//        frontRightMotor.setDirection(DcMotorSimple.Direction.REVERSE);
 
         backLeftMotor.setZeroPowerBehavior(DcMotorEx.ZeroPowerBehavior.BRAKE);
         backRightMotor.setZeroPowerBehavior(DcMotorEx.ZeroPowerBehavior.BRAKE);
