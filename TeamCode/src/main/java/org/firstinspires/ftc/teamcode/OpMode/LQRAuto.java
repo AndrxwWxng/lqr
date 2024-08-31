@@ -1,5 +1,7 @@
 package org.firstinspires.ftc.teamcode.OpMode;
 
+import com.acmerobotics.dashboard.FtcDashboard;
+import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
 import org.firstinspires.ftc.teamcode.LQRController;
 import com.acmerobotics.roadrunner.Pose2d;
 import com.acmerobotics.roadrunner.ftc.Encoder;
@@ -34,10 +36,15 @@ public class LQRAuto extends OpMode {
     private static final double ALPHA = 0.1;
     private double[] previousPowers = new double[4];
 
+    private FtcDashboard dashboard;
+    private TelemetryPacket packet;
+
     @Override
     public void init() {
         initializeHardware(hardwareMap);
         lqrController = new LQRController();
+        dashboard = FtcDashboard.getInstance();
+        packet = new TelemetryPacket();
 
         // Define target positions
         positions.add(new Pose2d(0, 0, Math.toRadians(0)));
@@ -62,6 +69,9 @@ public class LQRAuto extends OpMode {
         } else {
             stopMotors();
         }
+
+        dashboard.sendTelemetryPacket(packet);
+        packet.clearLines();
     }
 
     private void initializeHardware(HardwareMap hardwareMap) {
@@ -114,6 +124,22 @@ public class LQRAuto extends OpMode {
         }
 
         setMotorPowers(limitedPowers);
+
+        // Send data to telemetry and dashboard
+        packet.put("Target X", targetPose.position.x);
+        packet.put("Target Y", targetPose.position.y);
+        packet.put("Target Heading", Math.toDegrees(targetPose.heading.toDouble()));
+        packet.put("Current X", currentState.get(0));
+        packet.put("Current Y", currentState.get(1));
+        packet.put("Current Heading", Math.toDegrees(currentState.get(2)));
+        packet.put("Motor Powers", limitedPowers);
+        telemetry.addData("Target X", targetPose.position.x);
+        telemetry.addData("Target Y", targetPose.position.y);
+        telemetry.addData("Target Heading", Math.toDegrees(targetPose.heading.toDouble()));
+        telemetry.addData("Current X", currentState.get(0));
+        telemetry.addData("Current Y", currentState.get(1));
+        telemetry.addData("Current Heading", Math.toDegrees(currentState.get(2)));
+        telemetry.addData("Motor Powers", limitedPowers);
     }
 
     private SimpleMatrix getCurrentState() {
