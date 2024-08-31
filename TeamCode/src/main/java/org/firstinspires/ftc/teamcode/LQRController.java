@@ -5,66 +5,44 @@ import org.ejml.simple.SimpleMatrix;
 
 @Config
 public class LQRController {
-    private final SimpleMatrix LQR_Gain_Matrix;
-
-    public SimpleMatrix getAMatrix() {
-        return new SimpleMatrix(MatrixConfig.A_MATRIX);
-    }
-
-    public SimpleMatrix getBMatrix() {
-        return new SimpleMatrix(MatrixConfig.B_MATRIX);
-    }
-
-    public SimpleMatrix getQMatrix() {
-        return new SimpleMatrix(MatrixConfig.Q_MATRIX);
-    }
-
-    public SimpleMatrix getRMatrix() {
-        return new SimpleMatrix(MatrixConfig.R_MATRIX);
-    }
-
+    private SimpleMatrix LQR_Gain_Matrix;
 
     @Config
     public static class MatrixConfig {
-        // State transition matrix (6x6)
+        // State transition matrix (4x4)
         public static double[][] A_MATRIX = {
-                {1, 0, 0, 0, 0.1, 0},
-                {0, 1, 0, 0, 0, 0.1},
-                {0, 0, 1, 0, 0, 0},
-                {0, 0, 0, 1, 0, 0},
-                {0, 0, 0, 0, 1, 0},
-                {0, 0, 0, 0, 0, 1}
+                {1, 0, 0, 0},
+                {0, 1, 0, 0},
+                {0, 0, 1, 0},
+                {0, 0, 0, 1}
         };
 
-        // Input matrix (6x4)
+        // Input matrix (4x4)
         public static double[][] B_MATRIX = {
                 {0.005, 0.005, 0.005, 0.005},
                 {0.005, -0.005, -0.005, 0.005},
                 {0.001, -0.001, 0.001, -0.001},
-                {0.02, -0.02, 0.02, -0.02},
-                {0.1, 0.1, 0.1, 0.1},
-                {0.1, -0.1, -0.1, 0.1}
+                {0.001, 0.001, -0.001, -0.001}
         };
 
-        // State cost matrix (6x6)
-        public static double Q_SCALE = 1.0;
+        // Cost matrix for state (Q) (4x4)
         public static double[][] Q_MATRIX = {
-                {Q_SCALE, 0, 0, 0, 0, 0},
-                {0, Q_SCALE, 0, 0, 0, 0},
-                {0, 0, Q_SCALE, 0, 0, 0},
-                {0, 0, 0, Q_SCALE, 0, 0},
-                {0, 0, 0, 0, Q_SCALE, 0},
-                {0, 0, 0, 0, 0, Q_SCALE}
+                {1, 0, 0, 0},
+                {0, 1, 0, 0},
+                {0, 0, 1, 0},
+                {0, 0, 0, 1}
         };
 
-        // Input cost matrix (4x4)
-        public static double R_SCALE = 0.1;
+        // Cost matrix for control input (R) (4x4)
         public static double[][] R_MATRIX = {
-                {R_SCALE, 0, 0, 0},
-                {0, R_SCALE, 0, 0},
-                {0, 0, R_SCALE, 0},
-                {0, 0, 0, R_SCALE}
+                {1, 0, 0, 0},
+                {0, 1, 0, 0},
+                {0, 0, 1, 0},
+                {0, 0, 0, 1}
         };
+
+        public static double CONVERGENCE_THRESHOLD = 1e-4;
+        public static int MAX_ITERATIONS = 100;
     }
 
     public LQRController() {
@@ -72,38 +50,34 @@ public class LQRController {
         SimpleMatrix B = new SimpleMatrix(MatrixConfig.B_MATRIX);
         SimpleMatrix Q = new SimpleMatrix(MatrixConfig.Q_MATRIX);
         SimpleMatrix R = new SimpleMatrix(MatrixConfig.R_MATRIX);
+
         LQR_Gain_Matrix = solveRiccati(A, B, Q, R);
     }
 
-    public SimpleMatrix calculateLQRInput(SimpleMatrix state) {
-        return LQR_Gain_Matrix.mult(state).negative();
+    public SimpleMatrix calculateLQRInput(SimpleMatrix stateError) {
+        return LQR_Gain_Matrix.mult(stateError).negative();
     }
 
     private SimpleMatrix solveRiccati(SimpleMatrix A, SimpleMatrix B, SimpleMatrix Q, SimpleMatrix R) {
-
-
         SimpleMatrix P = Q;
-        int maxIterations = 100;
-        double tolerance = 1e-6;
+        SimpleMatrix BT = B.transpose();
+        SimpleMatrix AT = A.transpose();
+        SimpleMatrix Rinv = R.invert();
 
-        for (int i = 0; i < maxIterations; i++) {
+        for (int i = 0; i < MatrixConfig.MAX_ITERATIONS; i++) {
+            SimpleMatrix K = Rinv.mult(BT).mult(P);
+            SimpleMatrix newP = AT.mult(P).mult(A).minus(AT.mult(P).mult(B).mult(K)).plus(Q);
 
-            SimpleMatrix temp = B.transpose().mult(P).mult(B); // B'PB
-            SimpleMatrix temp2 = R.plus(temp); // R + B'PB
-
-            SimpleMatrix temp3 = temp2.invert(); // (R + B'PB)^-1
-            SimpleMatrix temp4 = B.mult(temp3).mult(B.transpose()); // B(R + B'PB)^-1B'
-            SimpleMatrix P_next = A.transpose().mult(P).mult(A) // A'PA
-                    .minus(A.transpose().mult(P).mult(temp4).mult(P).mult(A)) // A'PB(R + B'PB)^-1B'PA
-                    .plus(Q); // A'PA - A'PB(R + B'PB)^-1B'PA + Q
-            
-            if (P_next.minus(P).normF() < tolerance) {
+            if (P.minus(newP).elementMaxAbs() < MatrixConfig.CONVERGENCE_THRESHOLD) {
                 break;
             }
-            P = P_next;
+            P = newP;
         }
 
+        return Rinv.mult(BT).mult(P);
+    }
 
-        return R.invert().mult(B.transpose()).mult(P).negative(); // -R^-1B'P
+    public SimpleMatrix getLQRGainMatrix() {
+        return LQR_Gain_Matrix;
     }
 }
