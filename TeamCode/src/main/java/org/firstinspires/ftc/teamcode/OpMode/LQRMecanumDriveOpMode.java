@@ -72,10 +72,10 @@ public class LQRMecanumDriveOpMode extends OpMode {
     }
 
     private void displayLQRMatrixTelemetry() {
-        telemetry.addData("A Matrix", getMatrixString(lqrController.getAMatrix()));
-        telemetry.addData("B Matrix", getMatrixString(lqrController.getBMatrix()));
-        telemetry.addData("Q Matrix", getMatrixString(lqrController.getQMatrix()));
-        telemetry.addData("R Matrix", getMatrixString(lqrController.getRMatrix()));
+//        telemetry.addData("A Matrix", getMatrixString(lqrController.getAMatrix()));
+//        telemetry.addData("B Matrix", getMatrixString(lqrController.getBMatrix()));
+//        telemetry.addData("Q Matrix", getMatrixString(lqrController.getQMatrix()));
+//        telemetry.addData("R Matrix", getMatrixString(lqrController.getRMatrix()));
     }
 
     private String getMatrixString(SimpleMatrix matrix) {
